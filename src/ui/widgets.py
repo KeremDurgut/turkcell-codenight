@@ -1,82 +1,87 @@
 """
-Turkcell Decision Engine - Dashboard Widgets
-Reusable UI components for the dashboard
+Turkcell Decision Engine - Custom Widgets
+Yeniden kullanılabilir UI bileşenleri
 """
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
     QTableWidget, QTableWidgetItem, QHeaderView,
-    QFrame, QGridLayout, QSizePolicy
+    QFrame, QSizePolicy
 )
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QFont
 
 from .styles import (
-    TURKCELL_YELLOW, TURKCELL_DARK, TURKCELL_DARKER,
-    TURKCELL_ACCENT, TURKCELL_TEXT, TURKCELL_TEXT_DIM,
-    RISK_COLORS, ACTION_COLORS, CARD_STYLE, STAT_CARD_STYLE
+    TURKCELL_YELLOW, TURKCELL_BLUE, TURKCELL_DARK,
+    BG_WHITE, BORDER_GRAY, TEXT_PRIMARY, TEXT_SECONDARY,
+    RISK_COLORS, ACTION_COLORS, CARD_STYLE, STAT_CARD_STYLE,
+    COLOR_SUCCESS
 )
 
 
 class StatCard(QFrame):
-    """A card widget displaying a single statistic"""
+    """İstatistik kartı widget'ı"""
     
     def __init__(self, title: str, value: str = "0", parent=None):
         super().__init__(parent)
-        self.setStyleSheet(STAT_CARD_STYLE)
+        self.setStyleSheet(f"""
+            QFrame {{
+                background-color: {BG_WHITE};
+                border: 1px solid {BORDER_GRAY};
+                border-radius: 16px;
+            }}
+        """)
         self.setMinimumSize(180, 120)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         
         layout = QVBoxLayout(self)
         layout.setSpacing(8)
+        layout.setContentsMargins(16, 16, 16, 16)
         
-        # Value label
+        # Title
+        title_label = QLabel(title)
+        title_label.setStyleSheet(f"""
+            font-size: 11px;
+            color: {TEXT_SECONDARY};
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            background: transparent;
+        """)
+        layout.addWidget(title_label)
+        
+        # Value - LARGE AND VISIBLE
         self.value_label = QLabel(value)
-        self.value_label.setObjectName("statValue")
-        self.value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        font = QFont()
-        font.setPointSize(32)
-        font.setBold(True)
-        self.value_label.setFont(font)
-        self.value_label.setStyleSheet(f"color: {TURKCELL_YELLOW};")
-        
-        # Title label
-        self.title_label = QLabel(title.upper())
-        self.title_label.setObjectName("statLabel")
-        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.title_label.setStyleSheet(f"color: {TURKCELL_TEXT_DIM}; font-size: 11px; letter-spacing: 1px;")
-        
+        self.value_label.setStyleSheet(f"""
+            font-size: 32px;
+            font-weight: 700;
+            color: {TURKCELL_BLUE};
+            background: transparent;
+        """)
         layout.addWidget(self.value_label)
-        layout.addWidget(self.title_label)
+        
+        layout.addStretch()
     
     def set_value(self, value: str):
-        """Update the displayed value"""
-        self.value_label.setText(str(value))
-    
-    def set_color(self, color: str):
-        """Change the value color"""
-        self.value_label.setStyleSheet(f"color: {color};")
+        """Update the value"""
+        self.value_label.setText(value)
+        self.value_label.repaint()  # Force repaint
 
 
 class DataTable(QTableWidget):
-    """Enhanced table widget with styling and features"""
+    """Özelleştirilmiş data tablosu"""
     
     def __init__(self, columns: list, parent=None):
         super().__init__(parent)
-        self.columns = columns
-        self.setup_table()
-    
-    def setup_table(self):
-        """Initialize table structure and styling"""
-        self.setColumnCount(len(self.columns))
-        self.setHorizontalHeaderLabels(self.columns)
+        self.setColumnCount(len(columns))
+        self.setHorizontalHeaderLabels(columns)
         
-        # Header styling
+        # Configure header
         header = self.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        header.setDefaultAlignment(Qt.AlignmentFlag.AlignLeft)
+        header.setStretchLastSection(True)
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        header.setDefaultSectionSize(120)
         
-        # Table settings
+        # Configure table
         self.setAlternatingRowColors(True)
         self.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
@@ -86,47 +91,133 @@ class DataTable(QTableWidget):
         # Row height
         self.verticalHeader().setDefaultSectionSize(45)
     
-    def populate(self, data: list, key_mapping: dict = None):
-        """
-        Populate table with data.
-        key_mapping: dict mapping column names to data keys
-        """
+    def populate(self, data: list):
+        """Populate table with data"""
         self.setRowCount(len(data))
         
         for row_idx, row_data in enumerate(data):
-            for col_idx, col_name in enumerate(self.columns):
-                # Get the data key (might be different from column name)
-                key = key_mapping.get(col_name, col_name.lower().replace(' ', '_')) if key_mapping else col_name.lower().replace(' ', '_')
-                value = row_data.get(key, '')
-                
-                # Create item
-                item = QTableWidgetItem(str(value) if value is not None else '')
+            for col_idx, (key, value) in enumerate(row_data.items()):
+                item = QTableWidgetItem(str(value))
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                
-                # Apply color coding for specific columns
-                if col_name.lower() in ['risk_level', 'risk']:
-                    self._apply_risk_color(item, str(value))
-                elif col_name.lower() in ['action', 'action_type', 'selected_action']:
-                    self._apply_action_color(item, str(value))
-                
                 self.setItem(row_idx, col_idx, item)
+
+
+class RiskBadge(QLabel):
+    """Risk seviyesi badge'i"""
     
-    def _apply_risk_color(self, item: QTableWidgetItem, risk_level: str):
-        """Apply color based on risk level"""
-        color = RISK_COLORS.get(risk_level.upper(), TURKCELL_TEXT)
-        item.setForeground(QColor(color))
-        font = item.font()
-        font.setBold(True)
-        item.setFont(font)
+    def __init__(self, risk_level: str = "LOW", parent=None):
+        super().__init__(parent)
+        self.set_level(risk_level)
     
-    def _apply_action_color(self, item: QTableWidgetItem, action_type: str):
-        """Apply color based on action type"""
-        color = ACTION_COLORS.get(action_type, TURKCELL_TEXT)
-        item.setForeground(QColor(color))
+    def set_level(self, level: str):
+        """Set risk level"""
+        color = RISK_COLORS.get(level, COLOR_SUCCESS)
+        self.setText(level)
+        self.setStyleSheet(f"""
+            background-color: {color};
+            color: white;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        """)
+
+
+class ActionBadge(QLabel):
+    """Aksiyon türü badge'i"""
+    
+    def __init__(self, action_type: str, parent=None):
+        super().__init__(parent)
+        self.set_type(action_type)
+    
+    def set_type(self, action_type: str):
+        """Set action type"""
+        color = ACTION_COLORS.get(action_type, TURKCELL_BLUE)
+        # Shorten label
+        short_labels = {
+            'CRITICAL_ALERT': 'CRITICAL',
+            'DATA_USAGE_WARNING': 'DATA WARN',
+            'SPEND_ALERT': 'SPEND',
+            'CONTENT_COOLDOWN_SUGGESTION': 'CONTENT',
+            'DATA_USAGE_NUDGE': 'NUDGE',
+            'SPEND_NUDGE': 'NUDGE'
+        }
+        label = short_labels.get(action_type, action_type[:10])
+        self.setText(label)
+        self.setStyleSheet(f"""
+            background-color: {color};
+            color: white;
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 10px;
+        """)
+
+
+class UserStateCard(QFrame):
+    """Kullanıcı durum kartı"""
+    
+    def __init__(self, user_data: dict = None, parent=None):
+        super().__init__(parent)
+        self.setStyleSheet(CARD_STYLE)
+        self.setMinimumWidth(280)
+        
+        layout = QVBoxLayout(self)
+        layout.setSpacing(12)
+        
+        if user_data:
+            self.populate(user_data)
+    
+    def populate(self, data: dict):
+        """Populate card with user data"""
+        # Clear existing
+        while self.layout().count():
+            item = self.layout().takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        layout = self.layout()
+        
+        # Header with user name and risk badge
+        header_layout = QHBoxLayout()
+        
+        user_label = QLabel(f"👤 {data.get('user_id', 'N/A')}")
+        user_label.setStyleSheet(f"""
+            font-size: 16px;
+            font-weight: 600;
+            color: {TURKCELL_DARK};
+        """)
+        header_layout.addWidget(user_label)
+        
+        header_layout.addStretch()
+        
+        risk_badge = RiskBadge(data.get('risk_level', 'LOW'))
+        header_layout.addWidget(risk_badge)
+        
+        layout.addLayout(header_layout)
+        
+        # Stats
+        stats = [
+            ("İnternet", f"{data.get('internet_today_gb', 0):.1f} GB"),
+            ("Harcama", f"₺{data.get('spend_today_try', 0):.0f}"),
+            ("İçerik", f"{data.get('content_minutes_today', 0):.0f} dk")
+        ]
+        
+        for label, value in stats:
+            row = QHBoxLayout()
+            lbl = QLabel(label)
+            lbl.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 12px;")
+            row.addWidget(lbl)
+            row.addStretch()
+            val = QLabel(value)
+            val.setStyleSheet(f"color: {TEXT_PRIMARY}; font-weight: 600;")
+            row.addWidget(val)
+            layout.addLayout(row)
 
 
 class SectionHeader(QWidget):
-    """A styled section header with optional action button"""
+    """Bölüm başlığı"""
     
     def __init__(self, title: str, parent=None):
         super().__init__(parent)
@@ -134,106 +225,11 @@ class SectionHeader(QWidget):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 10, 0, 10)
         
-        # Title
-        self.title_label = QLabel(title)
-        self.title_label.setStyleSheet(f"""
+        label = QLabel(title)
+        label.setStyleSheet(f"""
             font-size: 18px;
             font-weight: 600;
-            color: {TURKCELL_YELLOW};
-            padding: 5px 0;
+            color: {TURKCELL_DARK};
         """)
-        
-        layout.addWidget(self.title_label)
+        layout.addWidget(label)
         layout.addStretch()
-
-
-class RiskBadge(QLabel):
-    """A colored badge showing risk level"""
-    
-    def __init__(self, risk_level: str = "LOW", parent=None):
-        super().__init__(parent)
-        self.set_risk(risk_level)
-    
-    def set_risk(self, risk_level: str):
-        """Update the risk level display"""
-        color = RISK_COLORS.get(risk_level.upper(), RISK_COLORS['LOW'])
-        self.setText(risk_level.upper())
-        self.setStyleSheet(f"""
-            background-color: {color};
-            color: {TURKCELL_DARK if risk_level.upper() in ['LOW', 'MEDIUM'] else 'white'};
-            padding: 6px 16px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 11px;
-        """)
-        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-
-class UserStateCard(QFrame):
-    """Card displaying a user's current state"""
-    
-    def __init__(self, user_data: dict = None, parent=None):
-        super().__init__(parent)
-        self.setStyleSheet(CARD_STYLE)
-        self.setup_ui()
-        if user_data:
-            self.update_data(user_data)
-    
-    def setup_ui(self):
-        """Setup the card layout"""
-        layout = QVBoxLayout(self)
-        layout.setSpacing(12)
-        
-        # Header row (name + risk badge)
-        header = QHBoxLayout()
-        self.name_label = QLabel("User")
-        self.name_label.setStyleSheet(f"font-size: 16px; font-weight: 600; color: {TURKCELL_TEXT};")
-        self.risk_badge = RiskBadge()
-        header.addWidget(self.name_label)
-        header.addStretch()
-        header.addWidget(self.risk_badge)
-        layout.addLayout(header)
-        
-        # Stats grid
-        stats_grid = QGridLayout()
-        stats_grid.setSpacing(8)
-        
-        # Internet usage
-        self.internet_label = QLabel("0.0 GB")
-        self.internet_label.setStyleSheet(f"font-size: 20px; font-weight: 600; color: {TURKCELL_YELLOW};")
-        stats_grid.addWidget(QLabel("İnternet"), 0, 0)
-        stats_grid.addWidget(self.internet_label, 1, 0)
-        
-        # Spending
-        self.spend_label = QLabel("0.0 ₺")
-        self.spend_label.setStyleSheet(f"font-size: 20px; font-weight: 600; color: {TURKCELL_YELLOW};")
-        stats_grid.addWidget(QLabel("Harcama"), 0, 1)
-        stats_grid.addWidget(self.spend_label, 1, 1)
-        
-        # Content minutes
-        self.content_label = QLabel("0 dk")
-        self.content_label.setStyleSheet(f"font-size: 20px; font-weight: 600; color: {TURKCELL_YELLOW};")
-        stats_grid.addWidget(QLabel("İçerik"), 0, 2)
-        stats_grid.addWidget(self.content_label, 1, 2)
-        
-        layout.addLayout(stats_grid)
-        
-        # City label
-        self.city_label = QLabel("")
-        self.city_label.setStyleSheet(f"color: {TURKCELL_TEXT_DIM}; font-size: 12px;")
-        layout.addWidget(self.city_label)
-    
-    def update_data(self, data: dict):
-        """Update card with new data"""
-        self.name_label.setText(data.get('name', 'Unknown'))
-        self.risk_badge.set_risk(data.get('risk_level', 'LOW'))
-        
-        internet = data.get('internet_today_gb', 0) or 0
-        spend = data.get('spend_today_try', 0) or 0
-        content = data.get('content_minutes_today', 0) or 0
-        
-        self.internet_label.setText(f"{float(internet):.1f} GB")
-        self.spend_label.setText(f"{float(spend):.0f} ₺")
-        self.content_label.setText(f"{int(float(content))} dk")
-        
-        self.city_label.setText(f"📍 {data.get('city', '')}")

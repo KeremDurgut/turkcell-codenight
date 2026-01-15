@@ -307,14 +307,24 @@ class DecisionRepository:
         """Create a new decision record"""
         query = """
             INSERT INTO decisions (decision_id, user_id, triggered_rules, selected_action, suppressed_actions, user_state_snapshot)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s::action_type_enum[], %s)
         """
         try:
+            # Convert Python lists to PostgreSQL array format
+            triggered_rules = decision['triggered_rules']
+            
+            suppressed_actions = decision.get('suppressed_actions')
+            if isinstance(suppressed_actions, list) and suppressed_actions:
+                suppressed_actions = suppressed_actions
+            else:
+                suppressed_actions = None
+            
             self.db.execute(query, (
                 decision['decision_id'], decision['user_id'], 
-                decision['triggered_rules'], decision['selected_action'],
-                decision.get('suppressed_actions'), decision.get('user_state_snapshot')
+                triggered_rules, decision['selected_action'],
+                suppressed_actions, decision.get('user_state_snapshot')
             ))
+            logger.info(f"Decision {decision['decision_id']} saved to database")
             return True
         except Exception as e:
             logger.error(f"Failed to create decision: {e}")

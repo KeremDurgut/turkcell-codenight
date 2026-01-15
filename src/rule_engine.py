@@ -7,7 +7,8 @@ import re
 import json
 import logging
 from typing import Dict, List, Optional, Tuple
-from datetime import datetime
+from datetime import datetime, date
+from decimal import Decimal
 
 from .database import (
     db, RuleRepository, UserStateRepository, 
@@ -15,6 +16,16 @@ from .database import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class DecimalEncoder(json.JSONEncoder):
+    """Custom JSON encoder for Decimal and datetime types"""
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        return super().default(obj)
 
 
 class RuleEngine:
@@ -38,8 +49,30 @@ class RuleEngine:
         self.user_state_repo = UserStateRepository(db)
         self.decision_repo = DecisionRepository(db)
         self.action_repo = ActionRepository(db)
-        self._decision_counter = 900
-        self._action_counter = 1000
+        
+        # Initialize counters from database to avoid duplicates
+        self._decision_counter = self._get_max_decision_id()
+        self._action_counter = self._get_max_action_id()
+    
+    def _get_max_decision_id(self) -> int:
+        """Get the maximum decision ID number from database"""
+        try:
+            result = db.execute_one("SELECT MAX(CAST(SUBSTRING(decision_id FROM 3) AS INTEGER)) as max_id FROM decisions WHERE decision_id LIKE 'D-%'")
+            if result and result.get('max_id'):
+                return result['max_id']
+        except:
+            pass
+        return 900
+    
+    def _get_max_action_id(self) -> int:
+        """Get the maximum action ID number from database"""
+        try:
+            result = db.execute_one("SELECT MAX(CAST(SUBSTRING(action_id FROM 3) AS INTEGER)) as max_id FROM actions WHERE action_id LIKE 'A-%'")
+            if result and result.get('max_id'):
+                return result['max_id']
+        except:
+            pass
+        return 1000
     
     def evaluate_condition(self, condition: str, user_state: Dict) -> bool:
         """
@@ -92,15 +125,50 @@ class RuleEngine:
             logger.error(f"Failed to evaluate condition '{condition}': {e}")
             return False
     
-    def get_triggered_rules(self, user_state: Dict) -> List[Dict]:
+    def is_rule_relevant_to_event(self, condition: str, event_type: str) -> bool:
+        """
+        Check if a rule is relevant to the given event type.
+        USAGE events -> only internet_today_gb rules
+        PAYMENT events -> only spend_today_try rules
+        CONTENT_CONSUMPTION events -> only content_minutes_today rules
+        """
+        condition_lower = condition.lower()
+        
+        # Define which fields each event type affects
+        event_field_map = {
+            'USAGE': 'internet_today_gb',
+            'PAYMENT': 'spend_today_try',
+            'CONTENT_CONSUMPTION': 'content_minutes_today'
+        }
+        
+        relevant_field = event_field_map.get(event_type, '')
+        
+        if not relevant_field:
+            # Unknown event type, evaluate all rules
+            return True
+        
+        # Check if the condition contains the relevant field
+        # Also allow CRITICAL_ALERT which may check multiple fields
+        if relevant_field in condition_lower:
+            return True
+        
+        # For combined rules (like internet AND spend), check if our field is part of it
+        return relevant_field in condition_lower
+    
+    def get_triggered_rules(self, user_state: Dict, event_type: str = None) -> List[Dict]:
         """
         Get all rules that are triggered by the current user state.
+        If event_type is provided, only evaluate rules relevant to that event type.
         Returns rules sorted by priority (1 = highest priority).
         """
         active_rules = self.rule_repo.get_active()
         triggered = []
         
         for rule in active_rules:
+            # Filter by event type if specified
+            if event_type and not self.is_rule_relevant_to_event(rule['condition'], event_type):
+                continue
+            
             if self.evaluate_condition(rule['condition'], user_state):
                 triggered.append(rule)
                 logger.debug(f"Rule {rule['rule_id']} triggered for condition: {rule['condition']}")
@@ -108,6 +176,7 @@ class RuleEngine:
         # Sort by priority (lower number = higher priority)
         triggered.sort(key=lambda r: r['priority'])
         return triggered
+
     
     def select_action(self, triggered_rules: List[Dict]) -> Tuple[Optional[Dict], List[Dict]]:
         """
@@ -123,9 +192,10 @@ class RuleEngine:
         
         return selected, suppressed
     
-    def process_user(self, user_id: str) -> Optional[Dict]:
+    def process_user(self, user_id: str, event_type: str = None) -> Optional[Dict]:
         """
         Process a single user: evaluate rules and create decision/action.
+        If event_type is provided, only evaluate rules relevant to that event type.
         Returns the decision record if any action was taken.
         """
         # Get current user state
@@ -134,8 +204,8 @@ class RuleEngine:
             logger.warning(f"No state found for user {user_id}")
             return None
         
-        # Get triggered rules
-        triggered_rules = self.get_triggered_rules(dict(user_state))
+        # Get triggered rules (filtered by event_type if provided)
+        triggered_rules = self.get_triggered_rules(dict(user_state), event_type)
         
         if not triggered_rules:
             logger.debug(f"No rules triggered for user {user_id}")
@@ -160,7 +230,7 @@ class RuleEngine:
             'triggered_rules': [r['rule_id'] for r in triggered_rules],
             'selected_action': selected_rule['action'],
             'suppressed_actions': [r['action'] for r in suppressed_rules] if suppressed_rules else None,
-            'user_state_snapshot': json.dumps(dict(user_state))
+            'user_state_snapshot': json.dumps(dict(user_state), cls=DecimalEncoder)
         }
         
         # Create action (BiP notification)

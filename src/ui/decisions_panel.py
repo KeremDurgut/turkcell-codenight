@@ -13,7 +13,7 @@ from PyQt6.QtGui import QColor
 import json
 
 from .widgets import DataTable, SectionHeader
-from .styles import TURKCELL_YELLOW, ACTION_COLORS
+from .styles import TURKCELL_BLUE, ACTION_COLORS
 from ..database import db, DecisionRepository, UserRepository
 from ..rule_engine import rule_engine
 
@@ -106,21 +106,11 @@ class DecisionsPanel(QWidget):
         
         # Header
         header_layout = QHBoxLayout()
-        title = QLabel("📋 Karar Geçmişi (Audit Log)")
-        title.setStyleSheet(f"font-size: 28px; font-weight: 700; color: {TURKCELL_YELLOW};")
-        
-        # Action buttons
-        process_btn = QPushButton("▶️ Tüm Kullanıcıları İşle")
-        process_btn.setObjectName("primaryButton")
-        process_btn.clicked.connect(self.process_all_users)
-        
-        refresh_btn = QPushButton("🔄 Yenile")
-        refresh_btn.clicked.connect(self.load_data)
+        title = QLabel("Karar Geçmişi (Audit Log)")
+        title.setStyleSheet(f"font-size: 28px; font-weight: 700; color: {TURKCELL_BLUE};")
         
         header_layout.addWidget(title)
         header_layout.addStretch()
-        header_layout.addWidget(process_btn)
-        header_layout.addWidget(refresh_btn)
         layout.addLayout(header_layout)
         
         # Filter row
@@ -220,13 +210,13 @@ class DecisionsPanel(QWidget):
             results = rule_engine.process_all_users()
             
             if results:
-                msg = f"✅ {len(results)} kullanıcı için karar oluşturuldu:\n\n"
+                msg = f"{len(results)} kullanıcı için karar oluşturuldu:\n\n"
                 for r in results[:5]:  # Show first 5
                     msg += f"• {r['decision']['user_id']}: {r['decision']['selected_action']}\n"
                 if len(results) > 5:
                     msg += f"... ve {len(results) - 5} daha"
             else:
-                msg = "ℹ️ Hiçbir kullanıcı için kural tetiklenmedi."
+                msg = "Hiçbir kullanıcı için kural tetiklenmedi."
             
             QMessageBox.information(self, "Kural Motoru Sonucu", msg)
             self.load_data()

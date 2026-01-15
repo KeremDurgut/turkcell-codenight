@@ -1,20 +1,24 @@
 """
 Turkcell Decision Engine - Main Window
-Main application window with tab-based navigation
+Ana uygulama penceresi
 """
 
 from PyQt6.QtWidgets import (
-    QMainWindow, QTabWidget, QWidget, QVBoxLayout,
-    QStatusBar, QLabel, QMessageBox, QApplication
+    QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout,
+    QStatusBar, QLabel, QApplication
 )
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QIcon, QFont
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
 
-from .styles import MAIN_STYLESHEET, TURKCELL_YELLOW
+from .styles import (
+    MAIN_STYLESHEET, TURKCELL_YELLOW, TURKCELL_BLUE, 
+    TURKCELL_DARK, BG_WHITE, HEADER_STYLE
+)
 from .dashboard import DashboardPanel
 from .events_panel import EventsPanel
 from .rules_panel import RulesPanel
 from .decisions_panel import DecisionsPanel
+from .notifications_panel import NotificationsPanel
 from ..config import app_config
 from ..database import db
 
@@ -30,99 +34,108 @@ class MainWindow(QMainWindow):
         # Apply stylesheet
         self.setStyleSheet(MAIN_STYLESHEET)
         
-        # Setup UI
-        self.setup_ui()
-        self.setup_statusbar()
-        
         # Connect to database
         self.connect_database()
-    
-    def setup_ui(self):
-        """Setup the main UI layout"""
-        # Central widget
-        central = QWidget()
-        self.setCentralWidget(central)
         
-        layout = QVBoxLayout(central)
+        # Setup main UI
+        self.main_widget = QWidget()
+        self.setCentralWidget(self.main_widget)
+        self.setup_main_ui()
+        
+        # Setup status bar
+        self.setup_statusbar()
+    
+    def connect_database(self):
+        """Connect to PostgreSQL database"""
+        if not db.connect():
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.critical(
+                self,
+                "Veritabanı Hatası",
+                "PostgreSQL veritabanına bağlanılamadı.\nLütfen veritabanı ayarlarını kontrol edin."
+            )
+    
+    def setup_main_ui(self):
+        """Setup the main UI layout"""
+        layout = QVBoxLayout(self.main_widget)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         
         # Header
         header = QWidget()
-        header.setStyleSheet(f"""
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:0, 
-                stop:0 #0F3460, stop:1 #1A1A2E);
-            padding: 15px;
-        """)
-        header_layout = QVBoxLayout(header)
+        header.setStyleSheet(HEADER_STYLE)
+        header_layout = QHBoxLayout(header)
+        header_layout.setContentsMargins(20, 15, 20, 15)
         
-        title = QLabel("🚀 Turkcell Decision Engine")
+        # Left side - Logo and title
+        left_layout = QVBoxLayout()
+        left_layout.setSpacing(2)
+        
+        title = QLabel("Turkcell Decision Engine")
         title.setStyleSheet(f"""
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
             color: {TURKCELL_YELLOW};
+            background: transparent;
         """)
+        left_layout.addWidget(title)
         
-        subtitle = QLabel("Çok Servisli Davranış ve Karar Platformu • Code Night 2026")
-        subtitle.setStyleSheet("color: #8B8B8B; font-size: 12px;")
+        subtitle = QLabel("Çok Servisli Davranış ve Karar Platformu")
+        subtitle.setStyleSheet(f"""
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 11px;
+            background: transparent;
+        """)
+        left_layout.addWidget(subtitle)
         
-        header_layout.addWidget(title)
-        header_layout.addWidget(subtitle)
+        header_layout.addLayout(left_layout)
+        header_layout.addStretch()
         layout.addWidget(header)
         
         # Tab widget
         self.tabs = QTabWidget()
         self.tabs.setDocumentMode(True)
         
-        # Add tabs
+        # Create all panels
         self.dashboard_tab = DashboardPanel()
-        self.events_tab = EventsPanel()
-        self.decisions_tab = DecisionsPanel()
-        self.rules_tab = RulesPanel()
+        self.tabs.addTab(self.dashboard_tab, "Dashboard")
         
-        self.tabs.addTab(self.dashboard_tab, "📊 Dashboard")
-        self.tabs.addTab(self.events_tab, "📨 Events")
-        self.tabs.addTab(self.decisions_tab, "📋 Kararlar")
-        self.tabs.addTab(self.rules_tab, "⚙️ Kurallar")
+        self.events_tab = EventsPanel()
+        self.tabs.addTab(self.events_tab, "Events")
+        
+        self.decisions_tab = DecisionsPanel()
+        self.tabs.addTab(self.decisions_tab, "Kararlar")
+        
+        self.notifications_tab = NotificationsPanel()
+        self.tabs.addTab(self.notifications_tab, "Bildirimler")
+        
+        self.rules_tab = RulesPanel()
+        self.tabs.addTab(self.rules_tab, "Kurallar")
+        
+        # Connect tab change to auto-refresh
+        self.tabs.currentChanged.connect(self.on_tab_changed)
         
         layout.addWidget(self.tabs)
+    
+    def on_tab_changed(self, index: int):
+        """Auto-refresh panel when tab changes"""
+        current_tab = self.tabs.widget(index)
+        if hasattr(current_tab, 'load_data'):
+            current_tab.load_data()
     
     def setup_statusbar(self):
         """Setup status bar"""
         self.statusbar = QStatusBar()
+        self.statusbar.setStyleSheet(f"""
+            QStatusBar {{
+                background-color: {BG_WHITE};
+                color: #666;
+                border-top: 1px solid #E0E0E0;
+                padding: 8px;
+            }}
+        """)
         self.setStatusBar(self.statusbar)
-        
-        # Database status
-        self.db_status = QLabel("🔴 Veritabanı: Bağlantı yok")
-        self.statusbar.addPermanentWidget(self.db_status)
-        
-        # Connection refresh timer
-        self.status_timer = QTimer(self)
-        self.status_timer.timeout.connect(self.update_db_status)
-        self.status_timer.start(5000)
-    
-    def connect_database(self):
-        """Connect to database"""
-        if db.connect():
-            self.db_status.setText("🟢 Veritabanı: Bağlı")
-            self.statusbar.showMessage("Veritabanına başarıyla bağlanıldı", 3000)
-        else:
-            self.db_status.setText("🔴 Veritabanı: Bağlantı hatası")
-            QMessageBox.warning(
-                self, 
-                "Veritabanı Hatası",
-                "PostgreSQL veritabanına bağlanılamadı.\n\n"
-                "Lütfen şunları kontrol edin:\n"
-                "1. PostgreSQL servisi çalışıyor mu?\n"
-                "2. .env dosyasındaki bağlantı bilgileri doğru mu?\n"
-                "3. Veritabanı oluşturulmuş mu?"
-            )
-    
-    def update_db_status(self):
-        """Update database status indicator"""
-        if db.is_connected:
-            self.db_status.setText("🟢 Veritabanı: Bağlı")
-        else:
-            self.db_status.setText("🔴 Veritabanı: Bağlantı yok")
+        self.statusbar.showMessage("Turkcell Decision Engine | Veritabanına bağlı")
     
     def closeEvent(self, event):
         """Handle window close"""
@@ -133,19 +146,12 @@ class MainWindow(QMainWindow):
 def run_app():
     """Run the application"""
     import sys
-    
     app = QApplication(sys.argv)
     
-    # Set application properties
-    app.setApplicationName("Turkcell Decision Engine")
-    app.setApplicationVersion("1.0.0")
-    app.setOrganizationName("Turkcell")
-    
-    # Set font
+    # Set application font
     font = QFont("Segoe UI", 10)
     app.setFont(font)
     
-    # Create and show main window
     window = MainWindow()
     window.show()
     

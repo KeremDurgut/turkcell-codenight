@@ -1,59 +1,83 @@
 """
 Turkcell Decision Engine - PyQt6 Styles
-Modern, premium dark theme inspired by Turkcell brand
+Turkcell resmi renk paleti ile modern arayüz tasarımı
 """
 
-# Turkcell Brand Colors
-TURKCELL_YELLOW = "#FFD100"
-TURKCELL_DARK = "#1A1A2E"
-TURKCELL_DARKER = "#16213E"
-TURKCELL_ACCENT = "#0F3460"
-TURKCELL_TEXT = "#EAEAEA"
-TURKCELL_TEXT_DIM = "#8B8B8B"
+# ============================================================
+# 1. ANA MARKA RENKLERİ (Primary Brand Colors)
+# ============================================================
+
+TURKCELL_YELLOW = "#FFC900"      # Butonlar, CTA, Vurgular
+TURKCELL_BLUE = "#2855AC"        # Header, Başlıklar, Linkler
+TURKCELL_DARK = "#0A1E43"        # Sidebar, Koyu Alanlar
+
+# ============================================================
+# 2. ARAYÜZ VE ZEMİN RENKLERİ (UI & Backgrounds)
+# ============================================================
+
+BG_WHITE = "#FFFFFF"             # Kartlar, Tablolar
+BG_GRAY = "#F4F6F8"              # Ana arka plan
+BORDER_GRAY = "#E0E0E0"          # Çizgiler, Border
+TEXT_PRIMARY = "#333333"         # Ana metinler
+TEXT_SECONDARY = "#666666"       # Alt başlıklar, Timestamp
+
+# ============================================================
+# 3. ALARM RENKLERİ (Semantic Colors)
+# ============================================================
+
+COLOR_CRITICAL = "#D32F2F"       # Kritik, Yüksek Risk (Kırmızı)
+COLOR_WARNING = "#F57C00"        # Uyarı, Orta Seviye (Turuncu)
+COLOR_SUCCESS = "#388E3C"        # Güvenli, Normal (Yeşil)
+COLOR_INFO = "#1976D2"           # Bilgilendirme (Mavi)
 
 # Risk Level Colors
 RISK_COLORS = {
-    'CRITICAL': '#FF4757',
-    'HIGH': '#FFA502',
-    'MEDIUM': '#FFD100',
-    'LOW': '#2ED573'
+    'CRITICAL': COLOR_CRITICAL,
+    'HIGH': COLOR_CRITICAL,
+    'MEDIUM': COLOR_WARNING,
+    'LOW': COLOR_SUCCESS
 }
 
 # Action Type Colors
 ACTION_COLORS = {
-    'CRITICAL_ALERT': '#FF4757',
-    'SPEND_ALERT': '#FFA502',
-    'DATA_USAGE_WARNING': '#FF6B81',
-    'CONTENT_COOLDOWN_SUGGESTION': '#5352ED',
-    'DATA_USAGE_NUDGE': '#70A1FF',
-    'SPEND_NUDGE': '#7BED9F'
+    'CRITICAL_ALERT': COLOR_CRITICAL,
+    'SPEND_ALERT': COLOR_WARNING,
+    'DATA_USAGE_WARNING': COLOR_WARNING,
+    'CONTENT_COOLDOWN_SUGGESTION': COLOR_INFO,
+    'DATA_USAGE_NUDGE': COLOR_INFO,
+    'SPEND_NUDGE': COLOR_SUCCESS
 }
 
-# Main Application Stylesheet
+# ============================================================
+# MAIN STYLESHEET - Light Theme
+# ============================================================
+
 MAIN_STYLESHEET = f"""
 /* ===== Global Styles ===== */
 QMainWindow, QWidget {{
-    background-color: {TURKCELL_DARK};
-    color: {TURKCELL_TEXT};
-    font-family: 'Segoe UI', 'Roboto', sans-serif;
+    background-color: {BG_GRAY};
+    color: {TEXT_PRIMARY};
+    font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
     font-size: 13px;
 }}
 
 /* ===== Tab Widget ===== */
 QTabWidget::pane {{
-    border: 1px solid {TURKCELL_ACCENT};
-    background-color: {TURKCELL_DARKER};
+    border: 1px solid {BORDER_GRAY};
+    background-color: {BG_WHITE};
     border-radius: 8px;
     padding: 5px;
 }}
 
 QTabBar::tab {{
-    background-color: {TURKCELL_ACCENT};
-    color: {TURKCELL_TEXT};
+    background-color: {BG_WHITE};
+    color: {TEXT_SECONDARY};
     padding: 12px 24px;
     margin-right: 4px;
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
+    border: 1px solid {BORDER_GRAY};
+    border-bottom: none;
     font-weight: 500;
 }}
 
@@ -61,26 +85,27 @@ QTabBar::tab:selected {{
     background-color: {TURKCELL_YELLOW};
     color: {TURKCELL_DARK};
     font-weight: 600;
+    border-color: {TURKCELL_YELLOW};
 }}
 
 QTabBar::tab:hover:!selected {{
-    background-color: #1F4068;
+    background-color: #E8E8E8;
 }}
 
 /* ===== Tables ===== */
 QTableWidget, QTableView {{
-    background-color: {TURKCELL_DARKER};
-    alternate-background-color: #1E2746;
-    border: 1px solid {TURKCELL_ACCENT};
+    background-color: {BG_WHITE};
+    alternate-background-color: #FAFAFA;
+    border: 1px solid {BORDER_GRAY};
     border-radius: 8px;
-    gridline-color: #2A3F5F;
+    gridline-color: {BORDER_GRAY};
     selection-background-color: {TURKCELL_YELLOW};
     selection-color: {TURKCELL_DARK};
 }}
 
 QTableWidget::item, QTableView::item {{
-    padding: 8px;
-    border-bottom: 1px solid #2A3F5F;
+    padding: 10px;
+    border-bottom: 1px solid {BORDER_GRAY};
 }}
 
 QTableWidget::item:selected, QTableView::item:selected {{
@@ -89,8 +114,8 @@ QTableWidget::item:selected, QTableView::item:selected {{
 }}
 
 QHeaderView::section {{
-    background-color: {TURKCELL_ACCENT};
-    color: {TURKCELL_YELLOW};
+    background-color: {TURKCELL_BLUE};
+    color: white;
     padding: 12px 8px;
     border: none;
     font-weight: 600;
@@ -109,8 +134,8 @@ QHeaderView::section:last {{
 
 /* ===== Buttons ===== */
 QPushButton {{
-    background-color: {TURKCELL_ACCENT};
-    color: {TURKCELL_TEXT};
+    background-color: {TURKCELL_BLUE};
+    color: white;
     border: none;
     padding: 12px 24px;
     border-radius: 6px;
@@ -119,12 +144,16 @@ QPushButton {{
 }}
 
 QPushButton:hover {{
-    background-color: #1F4068;
+    background-color: #1E4A9A;
 }}
 
 QPushButton:pressed {{
-    background-color: {TURKCELL_YELLOW};
-    color: {TURKCELL_DARK};
+    background-color: {TURKCELL_DARK};
+}}
+
+QPushButton:disabled {{
+    background-color: #CCCCCC;
+    color: #888888;
 }}
 
 QPushButton#primaryButton {{
@@ -134,30 +163,30 @@ QPushButton#primaryButton {{
 }}
 
 QPushButton#primaryButton:hover {{
-    background-color: #E6BC00;
+    background-color: #E6B800;
 }}
 
 QPushButton#dangerButton {{
-    background-color: #FF4757;
+    background-color: {COLOR_CRITICAL};
     color: white;
 }}
 
 QPushButton#dangerButton:hover {{
-    background-color: #FF6B81;
+    background-color: #B71C1C;
 }}
 
 /* ===== Input Fields ===== */
-QLineEdit, QTextEdit, QSpinBox, QComboBox {{
-    background-color: {TURKCELL_DARKER};
-    color: {TURKCELL_TEXT};
-    border: 2px solid {TURKCELL_ACCENT};
+QLineEdit, QTextEdit, QSpinBox, QDoubleSpinBox, QComboBox {{
+    background-color: {BG_WHITE};
+    color: {TEXT_PRIMARY};
+    border: 2px solid {BORDER_GRAY};
     border-radius: 6px;
     padding: 10px 12px;
     font-size: 13px;
 }}
 
-QLineEdit:focus, QTextEdit:focus, QSpinBox:focus, QComboBox:focus {{
-    border-color: {TURKCELL_YELLOW};
+QLineEdit:focus, QTextEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {{
+    border-color: {TURKCELL_BLUE};
 }}
 
 QComboBox::drop-down {{
@@ -169,63 +198,63 @@ QComboBox::down-arrow {{
     image: none;
     border-left: 5px solid transparent;
     border-right: 5px solid transparent;
-    border-top: 8px solid {TURKCELL_YELLOW};
+    border-top: 8px solid {TURKCELL_BLUE};
     margin-right: 10px;
 }}
 
 QComboBox QAbstractItemView {{
-    background-color: {TURKCELL_DARKER};
-    border: 1px solid {TURKCELL_ACCENT};
+    background-color: {BG_WHITE};
+    border: 1px solid {BORDER_GRAY};
     selection-background-color: {TURKCELL_YELLOW};
     selection-color: {TURKCELL_DARK};
 }}
 
 /* ===== Labels ===== */
 QLabel {{
-    color: {TURKCELL_TEXT};
+    color: {TEXT_PRIMARY};
 }}
 
 QLabel#headerLabel {{
     font-size: 24px;
     font-weight: 700;
-    color: {TURKCELL_YELLOW};
+    color: {TURKCELL_BLUE};
     padding: 10px 0;
 }}
 
 QLabel#subHeaderLabel {{
     font-size: 16px;
     font-weight: 500;
-    color: {TURKCELL_TEXT_DIM};
+    color: {TEXT_SECONDARY};
 }}
 
 QLabel#statValue {{
     font-size: 32px;
     font-weight: 700;
-    color: {TURKCELL_YELLOW};
+    color: {TURKCELL_BLUE};
 }}
 
 QLabel#statLabel {{
     font-size: 12px;
-    color: {TURKCELL_TEXT_DIM};
+    color: {TEXT_SECONDARY};
     text-transform: uppercase;
     letter-spacing: 1px;
 }}
 
 /* ===== Scroll Bars ===== */
 QScrollBar:vertical {{
-    background-color: {TURKCELL_DARKER};
+    background-color: {BG_GRAY};
     width: 12px;
     border-radius: 6px;
 }}
 
 QScrollBar::handle:vertical {{
-    background-color: {TURKCELL_ACCENT};
+    background-color: #CCCCCC;
     border-radius: 6px;
     min-height: 30px;
 }}
 
 QScrollBar::handle:vertical:hover {{
-    background-color: {TURKCELL_YELLOW};
+    background-color: {TURKCELL_BLUE};
 }}
 
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
@@ -233,24 +262,25 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
 }}
 
 QScrollBar:horizontal {{
-    background-color: {TURKCELL_DARKER};
+    background-color: {BG_GRAY};
     height: 12px;
     border-radius: 6px;
 }}
 
 QScrollBar::handle:horizontal {{
-    background-color: {TURKCELL_ACCENT};
+    background-color: #CCCCCC;
     border-radius: 6px;
     min-width: 30px;
 }}
 
 /* ===== Group Box ===== */
 QGroupBox {{
-    border: 2px solid {TURKCELL_ACCENT};
+    border: 2px solid {BORDER_GRAY};
     border-radius: 8px;
     margin-top: 16px;
     padding-top: 16px;
     font-weight: 600;
+    background-color: {BG_WHITE};
 }}
 
 QGroupBox::title {{
@@ -258,7 +288,7 @@ QGroupBox::title {{
     subcontrol-position: top left;
     left: 12px;
     padding: 0 8px;
-    color: {TURKCELL_YELLOW};
+    color: {TURKCELL_BLUE};
 }}
 
 /* ===== Check Box ===== */
@@ -270,7 +300,8 @@ QCheckBox::indicator {{
     width: 20px;
     height: 20px;
     border-radius: 4px;
-    border: 2px solid {TURKCELL_ACCENT};
+    border: 2px solid {BORDER_GRAY};
+    background-color: {BG_WHITE};
 }}
 
 QCheckBox::indicator:checked {{
@@ -280,48 +311,27 @@ QCheckBox::indicator:checked {{
 
 /* ===== Tooltips ===== */
 QToolTip {{
-    background-color: {TURKCELL_DARKER};
-    color: {TURKCELL_TEXT};
-    border: 1px solid {TURKCELL_YELLOW};
+    background-color: {TURKCELL_DARK};
+    color: white;
+    border: none;
     border-radius: 4px;
     padding: 8px;
 }}
 
 /* ===== Status Bar ===== */
 QStatusBar {{
-    background-color: {TURKCELL_DARKER};
-    color: {TURKCELL_TEXT_DIM};
-    border-top: 1px solid {TURKCELL_ACCENT};
-}}
-
-/* ===== Menu Bar ===== */
-QMenuBar {{
-    background-color: {TURKCELL_DARKER};
-    color: {TURKCELL_TEXT};
-    border-bottom: 1px solid {TURKCELL_ACCENT};
-}}
-
-QMenuBar::item:selected {{
-    background-color: {TURKCELL_ACCENT};
-}}
-
-QMenu {{
-    background-color: {TURKCELL_DARKER};
-    border: 1px solid {TURKCELL_ACCENT};
-}}
-
-QMenu::item:selected {{
-    background-color: {TURKCELL_YELLOW};
-    color: {TURKCELL_DARK};
+    background-color: {BG_WHITE};
+    color: {TEXT_SECONDARY};
+    border-top: 1px solid {BORDER_GRAY};
 }}
 
 /* ===== Progress Bar ===== */
 QProgressBar {{
     border: none;
     border-radius: 8px;
-    background-color: {TURKCELL_ACCENT};
+    background-color: {BORDER_GRAY};
     text-align: center;
-    color: {TURKCELL_TEXT};
+    color: {TEXT_PRIMARY};
 }}
 
 QProgressBar::chunk {{
@@ -329,29 +339,106 @@ QProgressBar::chunk {{
     border-radius: 8px;
 }}
 
-/* ===== Splitter ===== */
-QSplitter::handle {{
-    background-color: {TURKCELL_ACCENT};
+/* ===== Message Box ===== */
+QMessageBox {{
+    background-color: {BG_WHITE};
 }}
 
-QSplitter::handle:hover {{
-    background-color: {TURKCELL_YELLOW};
+/* ===== Dialog ===== */
+QDialog {{
+    background-color: {BG_WHITE};
 }}
 """
 
-# Card Widget Style
+# ============================================================
+# LOGIN SCREEN STYLESHEET
+# ============================================================
+
+LOGIN_STYLESHEET = f"""
+QWidget#loginWidget {{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+        stop:0 {TURKCELL_DARK}, stop:1 {TURKCELL_BLUE});
+}}
+
+QLabel#titleLabel {{
+    font-size: 28px;
+    font-weight: 700;
+    color: white;
+}}
+
+QLabel#subtitleLabel {{
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+}}
+
+QLabel#formLabel {{
+    font-size: 13px;
+    color: {TEXT_SECONDARY};
+    font-weight: 500;
+}}
+
+QLineEdit#loginInput {{
+    background-color: {BG_WHITE};
+    border: 2px solid {BORDER_GRAY};
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 14px;
+    color: {TEXT_PRIMARY};
+}}
+
+QLineEdit#loginInput:focus {{
+    border-color: {TURKCELL_YELLOW};
+}}
+
+QPushButton#loginButton {{
+    background-color: {TURKCELL_YELLOW};
+    color: {TURKCELL_DARK};
+    border: none;
+    border-radius: 8px;
+    padding: 14px 32px;
+    font-size: 16px;
+    font-weight: 600;
+}}
+
+QPushButton#loginButton:hover {{
+    background-color: #E6B800;
+}}
+
+QPushButton#loginButton:pressed {{
+    background-color: #CCa300;
+}}
+
+QLabel#errorLabel {{
+    color: {COLOR_CRITICAL};
+    font-size: 12px;
+    font-weight: 500;
+}}
+"""
+
+# ============================================================
+# CARD STYLES
+# ============================================================
+
 CARD_STYLE = f"""
-    background-color: {TURKCELL_DARKER};
-    border: 1px solid {TURKCELL_ACCENT};
+    background-color: {BG_WHITE};
+    border: 1px solid {BORDER_GRAY};
     border-radius: 12px;
     padding: 20px;
 """
 
-# Stat Card Style
 STAT_CARD_STYLE = f"""
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, 
-        stop:0 {TURKCELL_ACCENT}, stop:1 {TURKCELL_DARKER});
-    border: none;
+    background-color: {BG_WHITE};
+    border: 1px solid {BORDER_GRAY};
     border-radius: 16px;
     padding: 24px;
+"""
+
+# ============================================================
+# HEADER STYLE
+# ============================================================
+
+HEADER_STYLE = f"""
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, 
+        stop:0 {TURKCELL_DARK}, stop:1 {TURKCELL_BLUE});
+    padding: 15px 20px;
 """

@@ -13,7 +13,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
 
 from .widgets import DataTable, SectionHeader
-from .styles import TURKCELL_YELLOW, RISK_COLORS, ACTION_COLORS
+from .styles import TURKCELL_BLUE, RISK_COLORS, ACTION_COLORS
 from ..database import db, RuleRepository
 
 
@@ -150,8 +150,8 @@ class RulesPanel(QWidget):
         
         # Header
         header_layout = QHBoxLayout()
-        title = QLabel("⚙️ Kural Yönetimi")
-        title.setStyleSheet(f"font-size: 28px; font-weight: 700; color: {TURKCELL_YELLOW};")
+        title = QLabel("Kural Yönetimi")
+        title.setStyleSheet(f"font-size: 28px; font-weight: 700; color: {TURKCELL_BLUE};")
         
         # Bonus badge
         bonus_badge = QLabel("BONUS")
@@ -165,18 +165,14 @@ class RulesPanel(QWidget):
         """)
         
         # Action buttons
-        add_btn = QPushButton("➕ Yeni Kural")
+        add_btn = QPushButton("Yeni Kural")
         add_btn.setObjectName("primaryButton")
         add_btn.clicked.connect(self.add_rule)
-        
-        refresh_btn = QPushButton("🔄 Yenile")
-        refresh_btn.clicked.connect(self.load_data)
         
         header_layout.addWidget(title)
         header_layout.addWidget(bonus_badge)
         header_layout.addStretch()
         header_layout.addWidget(add_btn)
-        header_layout.addWidget(refresh_btn)
         layout.addLayout(header_layout)
         
         # Info text
@@ -194,10 +190,10 @@ class RulesPanel(QWidget):
         # Bottom buttons
         btn_layout = QHBoxLayout()
         
-        edit_btn = QPushButton("✏️ Düzenle")
+        edit_btn = QPushButton("Düzenle")
         edit_btn.clicked.connect(self.edit_selected_rule)
         
-        toggle_btn = QPushButton("🔄 Aktif/Pasif")
+        toggle_btn = QPushButton("Aktif/Pasif")
         toggle_btn.clicked.connect(self.toggle_selected_rule)
         
         btn_layout.addStretch()
@@ -234,7 +230,7 @@ class RulesPanel(QWidget):
                 
                 # Status
                 is_active = rule.get('is_active', False)
-                status_item = QTableWidgetItem("✅ Aktif" if is_active else "❌ Pasif")
+                status_item = QTableWidgetItem("Aktif" if is_active else "Pasif")
                 status_item.setForeground(QColor('#2ED573' if is_active else '#FF4757'))
                 self.rules_table.setItem(row_idx, 4, status_item)
                 
@@ -245,8 +241,10 @@ class RulesPanel(QWidget):
             print(f"Error loading rules: {e}")
     
     def add_rule(self):
-        """Show dialog to add new rule"""
-        dialog = RuleDialog(parent=self)
+        """Show wizard to add new rule"""
+        from .rule_wizard import RuleWizardDialog
+        
+        dialog = RuleWizardDialog(parent=self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             rule_data = dialog.get_rule_data()
             if self.rule_repo.create(rule_data):
